@@ -1,0 +1,108 @@
+/* Question 1 - 1 */
+/* Counts the number of unique campaigns */
+SELECT COUNT(DISTINCT utm_campaign) AS "Number of distinct campaigns"
+FROM page_visits;
+
+/* Counts the number of unique sources */
+SELECT COUNT(DISTINCT utm_source) AS "Number of distinct sources"
+FROM page_visits;
+
+/* Lists the campaigns per source */
+SELECT DISTINCT utm_source AS "Source", 
+		utm_campaign AS "Campaign"
+FROM page_visits;
+
+/* Question 1 - 2 */
+/* Lists the pages on their website */
+SELECT DISTINCT page_name AS "Pages"
+FROM page_visits;
+
+/* Question 2 - 1 */
+/* Counts the number of first touches per source and campaign by: 
+-creating a temporary table that records the first touches by user id
+-creating a temporary table that joins the temporary first touches table with the page visits table
+-listing and counting the occurences where first touch has a source and a campaign*/
+WITH first_touch AS (
+    SELECT user_id,
+        MIN(timestamp) AS first_touch_at
+    FROM page_visits
+    GROUP BY user_id),
+ft_attr AS (
+		SELECT ft.user_id,
+					 ft.first_touch_at,
+					 pv.utm_source,
+					 pv.utm_campaign
+		FROM first_touch ft
+		JOIN page_visits pv
+		ON ft.user_id = pv.user_id
+		AND ft.first_touch_at = pv.timestamp
+)
+SELECT ft_attr.utm_source AS "Source",
+			 ft_attr.utm_campaign AS "Campaign",
+       COUNT (*) AS "Number of first touches"
+FROM ft_attr
+GROUP BY 1, 2
+ORDER BY 3 DESC;
+
+/* Question 2 - 2 */
+/* Counts the number of last touches per source and campaign by: 
+-creating a temporary table that records the last touches by user id
+-creating a temporary table that joins the temporary last touches table with the page visits table
+-listing and counting the occurences where last touch has a source and a campaign*/
+WITH last_touch AS (
+    SELECT user_id,
+        MAX(timestamp) as last_touch_at
+    FROM page_visits
+    GROUP BY user_id),
+lt_attr AS (
+		SELECT lt.user_id,
+					 lt.last_touch_at,
+					 pv.utm_source,
+					 pv.utm_campaign,
+  				 pv.page_name
+		FROM last_touch lt
+		JOIN page_visits pv
+		ON lt.user_id = pv.user_id
+		AND lt.last_touch_at = pv.timestamp
+)
+SELECT lt_attr.utm_source AS "Source",
+			 lt_attr.utm_campaign AS "Campaign",
+       COUNT (*) AS "Number of last touches"
+FROM lt_attr
+GROUP BY 1, 2
+ORDER BY 3 DESC;
+
+/* Question 2 - 3 */
+/* Counts the number of unique purchases made by users*/
+SELECT COUNT (DISTINCT user_id) AS "Numer of visitors who made a purchase"
+FROM page_visits
+WHERE page_name = '4 - purchase';
+
+/* Question 2 - 4 */
+/* Counts the number of last touches that occured on the purchase page, per source and campaign by: 
+-creating a temporary table that records the last touches that occured on the purchase page by user id
+-creating a temporary table that joins the temporary last touches table with the page visits table
+-listing and counting the occurences where last touch has a source and a campaign*/
+WITH last_touch AS (
+    SELECT user_id,
+        MAX(timestamp) as last_touch_at
+    FROM page_visits
+  	WHERE page_name = '4 - purchase'
+    GROUP BY user_id),
+lt_attr AS (
+		SELECT lt.user_id,
+					 lt.last_touch_at,
+					 pv.utm_source,
+					 pv.utm_campaign,
+  				 pv.page_name
+		FROM last_touch lt
+		JOIN page_visits pv
+		ON lt.user_id = pv.user_id
+		AND lt.last_touch_at = pv.timestamp
+)
+SELECT lt_attr.utm_source AS "Source",
+			 lt_attr.utm_campaign AS "Campaign",
+       COUNT (*) AS "Number of last touches on the purchase page"
+FROM lt_attr
+GROUP BY 1, 2
+ORDER BY 3 DESC;
